@@ -1,0 +1,14 @@
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import api, { errorMessage } from '../api'
+import { Alert, Empty, PageTitle } from '../components/Common'
+
+export default function Subjects() {
+  const blank={name:'',code:'',description:''}; const [subjects,setSubjects]=useState([]); const [form,setForm]=useState(blank); const [editing,setEditing]=useState(null); const [error,setError]=useState(''); const [message,setMessage]=useState('')
+  const load=()=>api.get('/subjects').then(r=>setSubjects(r.data)).catch(e=>setError(errorMessage(e))); useEffect(()=>{load()},[])
+  const submit=async(e)=>{e.preventDefault();setError('');try{editing?await api.put(`/subjects/${editing}`,form):await api.post('/subjects',form);setMessage(editing?'Subject updated.':'Subject created.');setEditing(null);setForm(blank);load()}catch(err){setError(errorMessage(err))}}
+  const edit=s=>{setEditing(s.id);setForm({name:s.name,code:s.code,description:s.description})}
+  const remove=async id=>{if(!confirm('Delete this subject and all its materials?'))return;try{await api.delete(`/subjects/${id}`);load()}catch(e){setError(errorMessage(e))}}
+  return <><PageTitle title="Subject management" subtitle="Create the spaces students use for grounded learning."/><Alert>{error}</Alert><Alert type="success">{message}</Alert><div className="grid gap-6 lg:grid-cols-5"><form onSubmit={submit} className="panel h-fit space-y-4 p-5 lg:col-span-2"><h2 className="font-bold">{editing?'Edit subject':'New subject'}</h2><input className="input" placeholder="Subject name" required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><input className="input" placeholder="Code (e.g. CS101)" required value={form.code} onChange={e=>setForm({...form,code:e.target.value})}/><textarea className="input min-h-24" placeholder="Description" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/><div className="flex gap-2"><button className="btn-primary"><Plus size={17}/>{editing?'Save changes':'Create'}</button>{editing&&<button type="button" className="btn-secondary" onClick={()=>{setEditing(null);setForm(blank)}}>Cancel</button>}</div></form><div className="space-y-3 lg:col-span-3">{subjects.length?subjects.map(s=><div className="panel flex items-start justify-between gap-4 p-5" key={s.id}><div><div className="flex items-center gap-2"><span className="rounded-md bg-emerald-400/10 px-2 py-1 text-xs text-emerald-300">{s.code}</span><h3 className="font-bold">{s.name}</h3></div><p className="mt-2 text-sm text-slate-400">{s.description||'No description'} · {s.document_count} materials</p></div><div className="flex gap-2"><button className="btn-secondary px-3" onClick={()=>edit(s)}><Pencil size={16}/></button><button className="btn-danger px-3" onClick={()=>remove(s.id)}><Trash2 size={16}/></button></div></div>):<Empty>No subjects created.</Empty>}</div></div></>
+}
+
